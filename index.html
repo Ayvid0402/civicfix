@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CivicFix – See it. Report it. Track it. | Citizen Problem Reporting Platform</title>
+  <meta name="description" content="CivicFix is a modern citizen platform for reporting local civic problems such as potholes, broken streetlights, garbage, drainage issues, water leaks, and damaged footpaths.">
+
+  <!-- Modern Typography (Plus Jakarta Sans) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Leaflet CSS for Interactive Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ========================================================================= -->
+  <!-- GLOBAL NAVIGATION NAVBAR                                                  -->
+  <!-- ========================================================================= -->
+  <header class="navbar-wrapper" id="mainHeader">
+    <div class="nav-container">
+      
+      <!-- Brand Logo -->
+      <a href="#home" class="brand-logo" id="brandLogo" aria-label="CivicFix Home">
+        <div class="logo-mark">
+          <svg viewBox="0 0 32 32" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="32" height="32" rx="8" fill="url(#brandGrad)"/>
+            <path d="M16 6C11.58 6 8 9.58 8 14C8 19.5 16 26 16 26C16 26 24 19.5 24 14C24 9.58 20.42 6 16 6ZM16 17C14.34 17 13 15.66 13 14C13 12.34 14.34 11 16 11C17.66 11 19 12.34 19 14C19 15.66 17.66 17 16 17Z" fill="white"/>
+            <circle cx="16" cy="14" r="3" fill="#10b981"/>
+            <defs>
+              <linearGradient id="brandGrad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#0284c7"/>
+                <stop offset="1" stop-color="#0f766e"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div class="brand-text-group">
+          <span class="brand-name">Civic<span class="brand-accent">Fix</span></span>
+          <span class="brand-tagline">Citizen Action Portal</span>
+        </div>
+      </a>
+
+      <!-- Desktop Navigation Links -->
+      <nav class="nav-links" id="desktopNav" aria-label="Main Navigation">
+        <a href="#home" class="nav-item active" data-nav="home">Home</a>
+        <a href="#report" class="nav-item" data-nav="report">Report Problem</a>
+        <a href="#my-reports" class="nav-item" data-nav="my-reports">
+          My Reports
+          <span class="nav-badge" id="myReportsBadge">3</span>
+        </a>
+        <a href="#track" class="nav-item" data-nav="track">Track Report</a>
+        <a href="#nearby" class="nav-item" data-nav="nearby">Nearby Problems</a>
+        <a href="#about" class="nav-item" data-nav="about">About</a>
+      </nav>
+
+      <!-- Navbar Action: + Report a Problem CTA -->
+      <div class="nav-actions">
+        <a href="#report" class="btn btn-primary nav-cta-btn" id="btnNavReportCta">
+          <span class="cta-plus">+</span> Report a Problem
+        </a>
+        <button class="mobile-toggle-btn" id="btnMobileToggle" aria-label="Toggle Mobile Menu" aria-expanded="false">
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Mobile Drawer Navigation -->
+    <div class="mobile-drawer" id="mobileDrawer">
+      <nav class="mobile-nav-links">
+        <a href="#home" class="mobile-nav-item active" data-nav="home">🏠 Home</a>
+        <a href="#report" class="mobile-nav-item" data-nav="report">➕ Report Problem</a>
+        <a href="#my-reports" class="mobile-nav-item" data-nav="my-reports">📁 My Reports (<span id="mobileReportsCount">3</span>)</a>
+        <a href="#track" class="mobile-nav-item" data-nav="track">🔍 Track Report</a>
+        <a href="#nearby" class="mobile-nav-item" data-nav="nearby">🗺️ Nearby Problems</a>
+        <a href="#about" class="mobile-nav-item" data-nav="about">ℹ️ About</a>
+      </nav>
+      <div class="mobile-drawer-footer">
+        <a href="#report" class="btn btn-primary btn-block">+ Report a Problem</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================================================= -->
+  <!-- MAIN APP CONTAINER (PAGES VIEWPORT)                                       -->
+  <!-- ========================================================================= -->
+  <main class="main-content" id="mainContent">
+
+    <!-- ======================================================================= -->
+    <!-- 1. HOME PAGE                                                            -->
+    <!-- ======================================================================= -->
+    <section class="page-view active" id="page-home" data-page="home">
+      
+      <!-- Hero Section -->
+      <div class="hero-section">
+        <div class="hero-container">
+          <div class="hero-content">
+            <div class="hero-badge">
+              <span class="badge-dot"></span>
+              <span>City of Kochi • Citizen Public Infrastructure Portal</span>
+            </div>
+            
+            <h1 class="hero-title">See it. Report it. Track it.</h1>
+            <p class="hero-subtitle">
+              Report local civic problems quickly and keep track of their progress.
+            </p>
+
+            <div class="hero-cta-group">
+              <a href="#report" class="btn btn-primary btn-lg" id="btnHeroReport">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 5v14M5 12h14"/>
+                </svg>
+                Report a Problem
+              </a>
+              <a href="#nearby" class="btn btn-outline btn-lg" id="btnHeroNearby">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+                  <line x1="8" y1="2" x2="8" y2="18"/>
+                  <line x1="16" y1="6" x2="16" y2="22"/>
+                </svg>
+                View Nearby Problems
+              </a>
+            </div>
+
+            <!-- Fast-track Demo Quick Helper -->
+            <div class="demo-quick-banner">
+              <span class="demo-hint-icon">💡</span>
+              <span class="demo-hint-text"><strong>Live Demo:</strong> Click <em>"Report a Problem"</em> to test photo preview, Kochi location, and instant live tracking.</span>
+            </div>
+          </div>
+
+          <div class="hero-visual">
+            <div class="hero-card-preview">
+              <div class="preview-card-header">
+                <div class="preview-badge-status status-progress">
+                  <span class="status-pulse-dot"></span> In Progress
+                </div>
+                <span class="preview-ticket-id">CF10245</span>
+              </div>
+              <div class="preview-card-image-wrap">
+                <img src="assets/images/pothole.jpg" alt="Pothole near Main Junction" class="preview-card-img" id="heroPreviewImg">
+                <span class="preview-cat-tag">🕳️ Pothole</span>
+              </div>
+              <div class="preview-card-info">
+                <h3>Pothole near Main Junction</h3>
+                <p class="preview-loc">📍 Main Junction, Kochi</p>
+                <div class="preview-mini-progress">
+                  <div class="mini-bar filled"></div>
+                  <div class="mini-bar filled"></div>
+                  <div class="mini-bar active"></div>
+                  <div class="mini-bar"></div>
+                </div>
+                <div class="preview-card-footer">
+                  <span class="preview-update-time">Updated 10:30 AM</span>
+                  <a href="#track?id=CF10245" class="preview-track-link">Track Live →</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Statistics Bar -->
+      <section class="statistics-section" aria-label="CivicFix Live Statistics">
+        <div class="section-container">
+          <div class="stats-grid">
+            
+            <div class="stat-card">
+              <div class="stat-icon-wrap icon-blue">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                  <polyline points="10 9 9 9 8 9"/>
+                </svg>
+              </div>
+              <div class="stat-info">
+                <span class="stat-number" id="statSubmitted">1,248</span>
+                <span class="stat-label">Reports Submitted</span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon-wrap icon-green">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+              </div>
+              <div class="stat-info">
+                <span class="stat-number" id="statResolved">843</span>
+                <span class="stat-label">Resolved</span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon-wrap icon-amber">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </div>
+              <div class="stat-info">
+                <span class="stat-number" id="statInProgress">287</span>
+                <span class="stat-label">In Progress</span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon-wrap icon-cyan">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="16" x2="12" y2="12"/>
+                  <line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+              </div>
+              <div class="stat-info">
+                <span class="stat-number" id="statUnderReview">118</span>
+                <span class="stat-label">Under Review</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- How It Works Section -->
+      <section class="how-it-works-section">
+        <div class="section-container">
+          <div class="section-header text-center">
+            <span class="section-eyebrow">Simple & Transparent</span>
+            <h2 class="section-title">How It Works</h2>
+            <p class="section-desc">Report civic problems in four straightforward steps.</p>
+          </div>
+
+          <div class="how-cards-grid">
+            
+            <div class="how-card">
+              <div class="how-step-badge">1</div>
+              <div class="how-icon">📷</div>
+              <h3 class="how-card-title">Capture</h3>
+              <p class="how-card-desc">Take a photo of the problem.</p>
+            </div>
+
+            <div class="how-card">
+              <div class="how-step-badge">2</div>
+              <div class="how-icon">📍</div>
+              <h3 class="how-card-title">Locate</h3>
+              <p class="how-card-desc">Add the problem location.</p>
+            </div>
+
+            <div class="how-card">
+              <div class="how-step-badge">3</div>
+              <div class="how-icon">🏷️</div>
+              <h3 class="how-card-title">Report</h3>
+              <p class="how-card-desc">Choose a category and submit.</p>
+            </div>
+
+            <div class="how-card">
+              <div class="how-step-badge">4</div>
+              <div class="how-icon">📊</div>
+              <h3 class="how-card-title">Track</h3>
+              <p class="how-card-desc">Follow the progress.</p>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- Recent Reports Section -->
+      <section class="recent-reports-section">
+        <div class="section-container">
+          <div class="section-header-flex">
+            <div>
+              <span class="section-eyebrow">Community Action</span>
+              <h2 class="section-title">Recent Reports</h2>
+              <p class="section-desc">Real-time civic updates from around Kochi.</p>
+            </div>
+            <a href="#my-reports" class="btn btn-outline">View All Reports →</a>
+          </div>
+
+          <div class="reports-card-grid" id="homeRecentReportsGrid">
+            
+            <!-- Report 1: Pothole near Main Junction -->
+            <div class="report-card">
+              <div class="report-card-media">
+                <img src="assets/images/pothole.jpg" alt="Pothole near Main Junction" class="report-card-img">
+                <span class="report-badge-id">CF10245</span>
+              </div>
+              <div class="report-card-body">
+                <div class="report-status-row">
+                  <span class="status-chip status-progress">
+                    <span class="status-pulse-dot"></span> In Progress
+                  </span>
+                  <span class="report-category-pill">🕳️ Pothole</span>
+                </div>
+                <h3 class="report-card-heading">Pothole near Main Junction</h3>
+                <p class="report-card-location">📍 Main Junction, Kochi</p>
+                <div class="report-card-actions">
+                  <a href="#track?id=CF10245" class="btn btn-sm btn-primary">Track Report</a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Report 2: Broken Streetlight -->
+            <div class="report-card">
+              <div class="report-card-media">
+                <img src="assets/images/streetlight.jpg" alt="Broken Streetlight" class="report-card-img">
+                <span class="report-badge-id">CF10231</span>
+              </div>
+              <div class="report-card-body">
+                <div class="report-status-row">
+                  <span class="status-chip status-review">
+                    <span class="status-pulse-dot"></span> Under Review
+                  </span>
+                  <span class="report-category-pill">💡 Streetlight</span>
+                </div>
+                <h3 class="report-card-heading">Broken Streetlight</h3>
+                <p class="report-card-location">📍 MG Road, Kochi</p>
+                <div class="report-card-actions">
+                  <a href="#track?id=CF10231" class="btn btn-sm btn-primary">Track Report</a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Report 3: Garbage Overflow -->
+            <div class="report-card">
+              <div class="report-card-media">
+                <img src="assets/images/garbage.jpg" alt="Garbage Overflow" class="report-card-img">
+                <span class="report-badge-id">CF10198</span>
+              </div>
+              <div class="report-card-body">
+                <div class="report-status-row">
+                  <span class="status-chip status-resolved">
+                    <span class="status-pulse-dot"></span> Resolved
+                  </span>
+                  <span class="report-category-pill">🗑️ Garbage</span>
+                </div>
+                <h3 class="report-card-heading">Garbage Overflow</h3>
+                <p class="report-card-location">📍 Bus Stand Road, Kochi</p>
+                <div class="report-card-actions">
+                  <a href="#track?id=CF10198" class="btn btn-sm btn-primary">Track Report</a>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- Bottom Quick CTA Banner -->
+      <section class="banner-cta-section">
+        <div class="section-container">
+          <div class="banner-cta-card">
+            <div class="banner-content">
+              <h2>Spot an issue in your street or neighborhood?</h2>
+              <p>Submit your report in under 30 seconds. Help our local road and sanitation teams act quickly.</p>
+            </div>
+            <a href="#report" class="btn btn-light btn-lg">+ Report a Problem Now</a>
+          </div>
+        </div>
+      </section>
+
+    </section>
+
+    <!-- ======================================================================= -->
+    <!-- 2. REPORT PROBLEM PAGE                                                  -->
+    <!-- ======================================================================= -->
+    <section class="page-view" id="page-report" data-page="report">
+      <div class="form-page-container">
+        
+        <div class="form-page-header">
+          <a href="#home" class="back-link">← Back to Home</a>
+          <h1 class="page-main-heading">Report a Civic Problem</h1>
+          <p class="page-subtitle">Submit details of infrastructure or sanitation issues directly to local municipal authorities.</p>
+        </div>
+
+        <form id="reportProblemForm" class="civic-form-card" novalidate>
+          
+          <!-- STEP 1: Upload Photo -->
+          <div class="form-group-block">
+            <div class="form-label-wrap">
+              <label class="form-section-label">
+                <span class="label-step">1</span> Upload Photo
+              </label>
+              <span class="label-hint">Photo evidence speeds up municipal inspection</span>
+            </div>
+
+            <!-- Upload Drop Box -->
+            <div class="upload-dropzone" id="uploadDropzone">
+              <input type="file" id="photoFileInput" accept="image/*" class="hidden-file-input">
+              
+              <!-- Empty Upload Box View -->
+              <div class="upload-placeholder" id="uploadPlaceholder">
+                <div class="upload-icon-circle">📷</div>
+                <div class="upload-text-group">
+                  <h4 class="upload-main-text">Upload Photo</h4>
+                  <p class="upload-sub-text">Click to browse or drag and drop an image file (PNG, JPG, WEBP)</p>
+                </div>
+                <button type="button" class="btn btn-outline btn-sm" id="btnBrowseFile">Select Photo File</button>
+              </div>
+
+              <!-- Filled Preview View -->
+              <div class="upload-preview-container" id="uploadPreviewContainer" style="display: none;">
+                <img src="" alt="Uploaded Civic Problem Preview" id="uploadedImagePreview" class="uploaded-img-elem">
+                <div class="preview-overlay">
+                  <span class="preview-filename-badge" id="previewFileNameBadge">pothole.jpg</span>
+                  <div class="preview-btn-actions">
+                    <button type="button" class="btn btn-sm btn-light" id="btnChangePhoto">Change Photo</button>
+                    <button type="button" class="btn btn-sm btn-danger" id="btnRemovePhoto">Remove</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Demo Preset Photo Pickers -->
+            <div class="quick-preset-wrap">
+              <span class="preset-label">Quick Demo Presets:</span>
+              <button type="button" class="btn-preset-chip active" data-img="assets/images/pothole.jpg" data-cat="Pothole">
+                🕳️ Pothole Sample
+              </button>
+              <button type="button" class="btn-preset-chip" data-img="assets/images/streetlight.jpg" data-cat="Broken Streetlight">
+                💡 Streetlight Sample
+              </button>
+              <button type="button" class="btn-preset-chip" data-img="assets/images/garbage.jpg" data-cat="Garbage">
+                🗑️ Garbage Sample
+              </button>
+            </div>
+          </div>
+
+          <!-- STEP 2: Category Selector -->
+          <div class="form-group-block">
+            <div class="form-label-wrap">
+              <label class="form-section-label">
+                <span class="label-step">2</span> Category
+              </label>
+              <span class="label-hint">Choose the issue type for automated routing</span>
+            </div>
+
+            <div class="category-cards-grid" id="categoryCardsGrid">
+              
+              <div class="category-select-card selected" data-category="Pothole" data-icon="🕳️">
+                <span class="cat-card-icon">🕳️</span>
+                <span class="cat-card-name">Pothole</span>
+                <span class="cat-check-badge">✓</span>
+              </div>
+
+              <div class="category-select-card" data-category="Broken Streetlight" data-icon="💡">
+                <span class="cat-card-icon">💡</span>
+                <span class="cat-card-name">Broken Streetlight</span>
+                <span class="cat-check-badge">✓</span>
+              </div>
+
+              <div class="category-select-card" data-category="Garbage" data-icon="🗑️">
+                <span class="cat-card-icon">🗑️</span>
+                <span class="cat-card-name">Garbage</span>
+                <span class="cat-check-badge">✓</span>
+              </div>
+
+              <div class="category-select-card" data-category="Drainage" data-icon="🌊">
+                <span class="cat-card-icon">🌊</span>
+                <span class="cat-card-name">Drainage</span>
+                <span class="cat-check-badge">✓</span>
+              </div>
+
+              <div class="category-select-card" data-category="Water Leak" data-icon="🚰">
+                <span class="cat-card-icon">🚰</span>
+                <span class="cat-card-name">Water Leak</span>
+                <span class="cat-check-badge">✓</span>
+              </div>
+
+              <div class="category-select-card" data-category="Damaged Footpath" data-icon="🚶">
+                <span class="cat-card-icon">🚶</span>
+                <span class="cat-card-name">Damaged Footpath</span>
+                <span class="cat-check-badge">✓</span>
+              </div>
+
+              <div class="category-select-card" data-category="Public Facility" data-icon="🏢">
+                <span class="cat-card-icon">🏢</span>
+                <span class="cat-card-name">Public Facility</span>
+                <span class="cat-check-badge">✓</span>
+              </div>
+
+              <div class="category-select-card" data-category="Other" data-icon="❓">
+                <span class="cat-card-icon">❓</span>
+                <span class="cat-card-name">Other</span>
+                <span class="cat-check-badge">✓</span>
+              </div>
+
+            </div>
+            <input type="hidden" id="selectedCategoryInput" value="Pothole">
+          </div>
+
+          <!-- STEP 3: Location -->
+          <div class="form-group-block">
+            <div class="form-label-wrap">
+              <label class="form-section-label">
+                <span class="label-step">3</span> Location
+              </label>
+              <span class="label-hint">Pinned for municipal field inspectors</span>
+            </div>
+
+            <div class="location-detected-card">
+              <div class="loc-status-indicator">
+                <span class="loc-pin-icon">📍</span>
+                <div class="loc-text-wrap">
+                  <span class="loc-status-title">Location Detected</span>
+                  <strong class="loc-address-text" id="detectedLocationText">Main Junction, Kochi</strong>
+                  <span class="loc-coords-sub" id="detectedCoordsSub">Ward 12 • High-accuracy municipal zone</span>
+                </div>
+              </div>
+
+              <button type="button" class="btn btn-outline btn-loc-action" id="btnUseCurrentLocation">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="3"/>
+                  <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+                </svg>
+                <span id="locBtnText">Use Current Location</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- STEP 4: Description -->
+          <div class="form-group-block">
+            <div class="form-label-wrap">
+              <label class="form-section-label" for="problemDescriptionInput">
+                <span class="label-step">4</span> Description
+              </label>
+              <span class="label-hint">Provide helpful context for the repair crew</span>
+            </div>
+
+            <div class="textarea-wrap">
+              <textarea 
+                id="problemDescriptionInput" 
+                rows="4" 
+                class="civic-textarea" 
+                placeholder="Describe the problem... e.g., Large pothole near the junction causing difficulty for vehicles."
+              >Large pothole near the junction causing difficulty for vehicles.</textarea>
+              <div class="textarea-footer">
+                <span class="char-counter" id="charCountSpan">67 characters</span>
+                <button type="button" class="btn-text-preset" id="btnFillDemoDesc">⚡ Reset to Demo Text</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Submit Button Action -->
+          <div class="form-submit-block">
+            <button type="submit" class="btn btn-primary btn-submit-huge" id="btnSubmitReport">
+              <span class="btn-spinner" id="submitSpinner" style="display: none;"></span>
+              <span class="btn-submit-text" id="submitBtnText">SUBMIT REPORT</span>
+            </button>
+            <p class="submit-disclaimer">By submitting, your report is logged in the public municipal register and assigned a tracking ID.</p>
+          </div>
+
+        </form>
+
+      </div>
+    </section>
+
+    <!-- ======================================================================= -->
+    <!-- 3. SUCCESS SCREEN                                                       -->
+    <!-- ======================================================================= -->
+    <section class="page-view" id="page-success" data-page="success">
+      <div class="success-page-container">
+        
+        <div class="success-card">
+          
+          <!-- Animated Large Check Icon -->
+          <div class="success-icon-wrapper">
+            <div class="success-icon-circle">
+              <svg viewBox="0 0 52 52" class="checkmark-svg">
+                <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
+                <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+              </svg>
+            </div>
+          </div>
+
+          <h1 class="success-heading">Report Submitted Successfully!</h1>
+          <p class="success-subheading">Thank you for helping improve your community.</p>
+
+          <!-- Report Summary Box -->
+          <div class="success-summary-box">
+            <div class="summary-meta-item">
+              <span class="summary-label">Report ID</span>
+              <strong class="summary-value highlight-id" id="successReportId">CF10245</strong>
+            </div>
+
+            <div class="summary-meta-item">
+              <span class="summary-label">Category</span>
+              <strong class="summary-value" id="successCategory">Pothole</strong>
+            </div>
+
+            <div class="summary-meta-item">
+              <span class="summary-label">Location</span>
+              <strong class="summary-value" id="successLocation">Main Junction, Kochi</strong>
+            </div>
+
+            <div class="summary-meta-item">
+              <span class="summary-label">Status</span>
+              <span class="status-chip status-progress" id="successStatusBadge">
+                <span class="status-pulse-dot"></span> In Progress
+              </span>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="success-actions-group">
+            <button type="button" class="btn btn-primary btn-lg" id="btnSuccessTrack">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+              </svg>
+              Track Report
+            </button>
+
+            <button type="button" class="btn btn-outline btn-lg" id="btnSuccessMyReports">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              View My Reports
+            </button>
+
+            <button type="button" class="btn btn-text" id="btnSuccessHome">
+              Back to Home
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ======================================================================= -->
+    <!-- 4. MY REPORTS PAGE                                                      -->
+    <!-- ======================================================================= -->
+    <section class="page-view" id="page-my-reports" data-page="my-reports">
+      <div class="page-container">
+        
+        <div class="page-title-bar">
+          <div>
+            <h1 class="page-main-heading">My Reports</h1>
+            <p class="page-subtitle">Track your submitted civic issues, department assignments, and resolution status.</p>
+          </div>
+          <a href="#report" class="btn btn-primary">
+            + Report New Problem
+          </a>
+        </div>
+
+        <!-- Filter Buttons Bar -->
+        <div class="reports-filter-bar">
+          <div class="filter-buttons-group" role="tablist" aria-label="Filter Reports by Status">
+            <button class="filter-tab-btn active" data-filter="All">
+              All <span class="filter-count" id="countAll">3</span>
+            </button>
+            <button class="filter-tab-btn" data-filter="Under Review">
+              Under Review <span class="filter-count" id="countReview">1</span>
+            </button>
+            <button class="filter-tab-btn" data-filter="In Progress">
+              In Progress <span class="filter-count" id="countProgress">1</span>
+            </button>
+            <button class="filter-tab-btn" data-filter="Resolved">
+              Resolved <span class="filter-count" id="countResolved">1</span>
+            </button>
+          </div>
+
+          <div class="reports-search-box">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input type="text" id="reportSearchInput" placeholder="Search by title, ID, or location...">
+          </div>
+        </div>
+
+        <!-- Reports Card Grid -->
+        <div class="my-reports-grid" id="myReportsList">
+          <!-- Dynamically populated by app.js from localStorage/state -->
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ======================================================================= -->
+    <!-- 5. TRACK REPORT PAGE                                                    -->
+    <!-- ======================================================================= -->
+    <section class="page-view" id="page-track" data-page="track">
+      <div class="track-page-container">
+        
+        <div class="page-title-bar">
+          <div>
+            <a href="#my-reports" class="back-link">← Back to My Reports</a>
+            <h1 class="page-main-heading">Track Report</h1>
+          </div>
+          
+          <!-- Quick Switcher / Lookup -->
+          <div class="ticket-lookup-widget">
+            <span class="lookup-label">Lookup ID:</span>
+            <input type="text" id="trackLookupInput" value="CF10245" placeholder="e.g. CF10245" class="lookup-input">
+            <button type="button" class="btn btn-sm btn-outline" id="btnLookupTicket">Find</button>
+          </div>
+        </div>
+
+        <!-- Main Tracking Presentation Card -->
+        <div class="track-main-card">
+          
+          <!-- Header of Tracked Ticket -->
+          <div class="track-header-banner">
+            <div class="track-header-left">
+              <div class="track-id-badge" id="trackHeaderId">Report #CF10245</div>
+              <h2 class="track-issue-title" id="trackHeaderTitle">Pothole near Main Junction</h2>
+              <p class="track-issue-location" id="trackHeaderLocation">📍 Main Junction, Kochi</p>
+            </div>
+            <div class="track-header-right">
+              <div class="status-chip status-progress status-chip-lg" id="trackHeaderBadge">
+                <span class="status-pulse-dot"></span> In Progress
+              </div>
+              <span class="track-last-updated" id="trackLastUpdated">Last updated: Today, 10:30 AM</span>
+            </div>
+          </div>
+
+          <div class="track-body-grid">
+            
+            <!-- LEFT: Vertical Progress Timeline -->
+            <div class="track-timeline-col">
+              <h3 class="track-section-title">Resolution Timeline</h3>
+              
+              <div class="vertical-timeline" id="verticalTimeline">
+                
+                <!-- Step 1: Submitted -->
+                <div class="timeline-step step-completed" id="stepSubmitted">
+                  <div class="step-marker">
+                    <span class="step-icon">✓</span>
+                  </div>
+                  <div class="step-content">
+                    <div class="step-header">
+                      <strong class="step-title">Submitted</strong>
+                      <span class="step-timestamp">Today, 09:15 AM</span>
+                    </div>
+                    <p class="step-note">Civic issue logged into CivicFix digital portal. Assigned unique ticket #CF10245.</p>
+                  </div>
+                </div>
+
+                <div class="timeline-connector connector-completed" id="conn1"></div>
+
+                <!-- Step 2: Under Review -->
+                <div class="timeline-step step-completed" id="stepUnderReview">
+                  <div class="step-marker">
+                    <span class="step-icon">✓</span>
+                  </div>
+                  <div class="step-content">
+                    <div class="step-header">
+                      <strong class="step-title">Under Review</strong>
+                      <span class="step-timestamp">Today, 09:45 AM</span>
+                    </div>
+                    <p class="step-note">Verified by Ward 12 Municipal Control Desk. Location and photo validated.</p>
+                  </div>
+                </div>
+
+                <div class="timeline-connector connector-completed" id="conn2"></div>
+
+                <!-- Step 3: In Progress (Active) -->
+                <div class="timeline-step step-active" id="stepInProgress">
+                  <div class="step-marker marker-amber">
+                    <span class="step-icon">🟡</span>
+                  </div>
+                  <div class="step-content">
+                    <div class="step-header">
+                      <strong class="step-title">In Progress</strong>
+                      <span class="step-badge-current">Current Status</span>
+                      <span class="step-timestamp">Today, 10:30 AM</span>
+                    </div>
+                    <p class="step-note">Repair crew dispatched: Ramesh Nair • KMC Road Maintenance Wing. Work Order #KMC-419.</p>
+                  </div>
+                </div>
+
+                <div class="timeline-connector connector-pending" id="conn3"></div>
+
+                <!-- Step 4: Resolved -->
+                <div class="timeline-step step-pending" id="stepResolved">
+                  <div class="step-marker marker-gray">
+                    <span class="step-icon">○</span>
+                  </div>
+                  <div class="step-content">
+                    <div class="step-header">
+                      <strong class="step-title">Resolved</strong>
+                      <span class="step-timestamp">Estimated Today, 05:00 PM</span>
+                    </div>
+                    <p class="step-note">Final asphalt compaction, site inspection, and citizen notification.</p>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- RIGHT: Report Details Column -->
+            <div class="track-details-col">
+              <h3 class="track-section-title">Report Details</h3>
+
+              <div class="details-card-box">
+                
+                <div class="detail-row">
+                  <span class="detail-label">Category:</span>
+                  <strong class="detail-value" id="trackDetailCategory">Pothole</strong>
+                </div>
+
+                <div class="detail-row">
+                  <span class="detail-label">Location:</span>
+                  <strong class="detail-value" id="trackDetailLocation">Main Junction, Kochi</strong>
+                </div>
+
+                <div class="detail-row">
+                  <span class="detail-label">Report ID:</span>
+                  <strong class="detail-value highlight-id" id="trackDetailId">CF10245</strong>
+                </div>
+
+                <div class="detail-row">
+                  <span class="detail-label">Status:</span>
+                  <strong class="detail-value" id="trackDetailStatus">In Progress</strong>
+                </div>
+
+                <div class="detail-row">
+                  <span class="detail-label">Assigned Crew:</span>
+                  <span class="detail-value" id="trackDetailCrew">KMC Roads Department (Division 4)</span>
+                </div>
+
+                <div class="detail-row">
+                  <span class="detail-label">Citizen Note:</span>
+                  <p class="detail-note" id="trackDetailDescription">Large pothole near the junction causing difficulty for vehicles.</p>
+                </div>
+
+                <!-- Photo Evidence -->
+                <div class="detail-photo-wrap">
+                  <span class="detail-label">Attached Photo:</span>
+                  <div class="detail-img-container">
+                    <img src="assets/images/pothole.jpg" alt="Attached Problem Photo" id="trackDetailPhoto" class="track-evidence-img">
+                  </div>
+                </div>
+
+                <!-- Action Button -->
+                <div class="detail-actions">
+                  <a href="#my-reports" class="btn btn-outline btn-block">Back to My Reports</a>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ======================================================================= -->
+    <!-- 6. NEARBY PROBLEMS PAGE                                                 -->
+    <!-- ======================================================================= -->
+    <section class="page-view" id="page-nearby" data-page="nearby">
+      <div class="page-container">
+        
+        <div class="page-title-bar">
+          <div>
+            <h1 class="page-main-heading">Problems Near You</h1>
+            <p class="page-subtitle">Interactive map of civic issues reported across Kochi. Click any marker to view status and details.</p>
+          </div>
+
+          <div class="map-legend">
+            <span class="legend-item"><span class="legend-dot dot-progress"></span> In Progress</span>
+            <span class="legend-item"><span class="legend-dot dot-review"></span> Under Review</span>
+            <span class="legend-item"><span class="legend-dot dot-resolved"></span> Resolved</span>
+          </div>
+        </div>
+
+        <!-- Filter Tags Bar -->
+        <div class="nearby-filters-row">
+          <span class="filter-label">Filter Category:</span>
+          <button class="map-chip active" data-mapfilter="All">All Issues (5)</button>
+          <button class="map-chip" data-mapfilter="Pothole">🕳️ Potholes</button>
+          <button class="map-chip" data-mapfilter="Broken Streetlight">💡 Broken Streetlights</button>
+          <button class="map-chip" data-mapfilter="Garbage">🗑️ Garbage</button>
+          <button class="map-chip" data-mapfilter="Drainage">🌊 Drainage</button>
+        </div>
+
+        <!-- Interactive Map Layout Grid -->
+        <div class="map-view-layout">
+          
+          <!-- Map Canvas Container -->
+          <div class="map-canvas-wrapper">
+            <div id="civicLeafletMap" class="interactive-leaflet-map" aria-label="Interactive Map of Kochi Civic Issues"></div>
+            
+            <div class="map-controls-floating">
+              <button class="btn btn-sm btn-light" id="btnMapRecenter" title="Recenter on Kochi Main Junction">
+                🎯 Recenter (Kochi)
+              </button>
+            </div>
+          </div>
+
+          <!-- Selected Marker Detail Card -->
+          <div class="map-sidebar-card" id="mapDetailCard">
+            <div class="sidebar-header">
+              <span class="sidebar-badge">Selected Problem</span>
+              <span class="sidebar-ticket-id" id="mapCardId">CF10245</span>
+            </div>
+
+            <div class="sidebar-body">
+              <div class="sidebar-icon-cat">
+                <span class="sidebar-emoji" id="mapCardIcon">🕳️</span>
+                <div>
+                  <h3 class="sidebar-problem-title" id="mapCardTitle">Pothole</h3>
+                  <p class="sidebar-problem-loc" id="mapCardLocation">Main Junction, Kochi</p>
+                </div>
+              </div>
+
+              <div class="sidebar-meta-list">
+                <div class="meta-row">
+                  <span class="meta-label">Status:</span>
+                  <span class="status-chip status-progress" id="mapCardStatus">
+                    <span class="status-pulse-dot"></span> In Progress
+                  </span>
+                </div>
+                <div class="meta-row">
+                  <span class="meta-label">Coordinates:</span>
+                  <span class="meta-coords" id="mapCardCoords">9.9816° N, 76.2999° E</span>
+                </div>
+                <div class="meta-row">
+                  <span class="meta-label">Reported:</span>
+                  <span class="meta-time" id="mapCardTime">Today, 10:30 AM</span>
+                </div>
+              </div>
+
+              <div class="sidebar-actions">
+                <a href="#track?id=CF10245" class="btn btn-primary btn-block" id="btnMapCardViewDetails">
+                  View Details
+                </a>
+              </div>
+            </div>
+
+            <!-- List of nearby quick jumps -->
+            <div class="sidebar-quick-list">
+              <span class="quick-list-title">Quick Marker Jump:</span>
+              <div class="quick-jump-btns">
+                <button type="button" class="btn-jump-marker" data-marker-id="CF10245">🕳️ Main Jct (Pothole)</button>
+                <button type="button" class="btn-jump-marker" data-marker-id="CF10231">💡 MG Road (Streetlight)</button>
+                <button type="button" class="btn-jump-marker" data-marker-id="CF10198">🗑️ Bus Stand (Garbage)</button>
+                <button type="button" class="btn-jump-marker" data-marker-id="CF10185">🌊 Civil Station (Drainage)</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ======================================================================= -->
+    <!-- 7. ABOUT PAGE                                                           -->
+    <!-- ======================================================================= -->
+    <section class="page-view" id="page-about" data-page="about">
+      <div class="about-page-container">
+        
+        <!-- Header -->
+        <div class="about-hero text-center">
+          <span class="section-eyebrow">About the Platform</span>
+          <h1 class="page-main-heading">About CivicFix</h1>
+          <p class="about-mission-statement">
+            CivicFix makes it easier for citizens to report local civic problems.
+          </p>
+        </div>
+
+        <!-- 5-Step Visual Flow Explained -->
+        <div class="about-flow-card">
+          <h2 class="flow-card-heading">The CivicFix Reporting Cycle</h2>
+          
+          <div class="flow-steps-chain">
+            
+            <div class="flow-step-item">
+              <div class="flow-icon-circle">📷</div>
+              <strong class="flow-name">Photo</strong>
+              <p class="flow-hint">Snap live evidence</p>
+            </div>
+
+            <div class="flow-arrow">→</div>
+
+            <div class="flow-step-item">
+              <div class="flow-icon-circle">📍</div>
+              <strong class="flow-name">Location</strong>
+              <p class="flow-hint">Detect Kochi GPS</p>
+            </div>
+
+            <div class="flow-arrow">→</div>
+
+            <div class="flow-step-item">
+              <div class="flow-icon-circle">🏷️</div>
+              <strong class="flow-name">Category</strong>
+              <p class="flow-hint">Choose issue type</p>
+            </div>
+
+            <div class="flow-arrow">→</div>
+
+            <div class="flow-step-item">
+              <div class="flow-icon-circle">📋</div>
+              <strong class="flow-name">Report</strong>
+              <p class="flow-hint">Submit in 30s</p>
+            </div>
+
+            <div class="flow-arrow">→</div>
+
+            <div class="flow-step-item">
+              <div class="flow-icon-circle">📊</div>
+              <strong class="flow-name">Track</strong>
+              <p class="flow-hint">Follow resolution</p>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Information Cards Grid -->
+        <div class="about-grid">
+          
+          <div class="about-info-card">
+            <div class="about-card-icon">🏛️</div>
+            <h3>Direct Municipal Accountability</h3>
+            <p>Reports are routed straight to Kochi Municipal Corporation ward engineering and sanitation divisions, cutting bureaucratic delays.</p>
+          </div>
+
+          <div class="about-info-card">
+            <div class="about-card-icon">⚡</div>
+            <h3>Real-Time Public Tracking</h3>
+            <p>Citizens receive clear, transparent status updates: Submitted → Under Review → In Progress → Resolved with assigned officer details.</p>
+          </div>
+
+          <div class="about-info-card">
+            <div class="about-card-icon">👥</div>
+            <h3>Community-Driven Action</h3>
+            <p>Prevents duplicate reporting with interactive neighborhood problem maps, enabling smarter resource allocation across wards.</p>
+          </div>
+
+        </div>
+
+        <!-- About Contact / College Project Stamp -->
+        <div class="about-footer-card">
+          <div class="footer-stamp-content">
+            <h3>CivicFix Public Service Initiative</h3>
+            <p>Created for smart civic governance, citizen engagement, and transparent municipal action.</p>
+          </div>
+          <div class="footer-stamp-actions">
+            <a href="#report" class="btn btn-primary">Try Reporting an Issue</a>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- GLOBAL FOOTER                                                             -->
+  <!-- ========================================================================= -->
+  <footer class="site-footer">
+    <div class="footer-container">
+      <div class="footer-brand-col">
+        <div class="footer-logo">
+          <span class="footer-logo-text">Civic<span class="brand-accent">Fix</span></span>
+        </div>
+        <p class="footer-tagline">See it. Report it. Track it.</p>
+        <p class="footer-desc">A citizen platform for reporting potholes, broken streetlights, garbage overflow, drainage, and civic infrastructure problems.</p>
+      </div>
+
+      <div class="footer-links-col">
+        <h4 class="footer-col-title">Navigation</h4>
+        <ul class="footer-links">
+          <li><a href="#home">Home</a></li>
+          <li><a href="#report">Report Problem</a></li>
+          <li><a href="#my-reports">My Reports</a></li>
+          <li><a href="#track">Track Report</a></li>
+          <li><a href="#nearby">Nearby Problems</a></li>
+          <li><a href="#about">About</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-links-col">
+        <h4 class="footer-col-title">Civic Categories</h4>
+        <ul class="footer-links">
+          <li><span>🕳️ Potholes & Road Damage</span></li>
+          <li><span>💡 Streetlights & Lighting</span></li>
+          <li><span>🗑️ Waste Management & Sanitation</span></li>
+          <li><span>🌊 Stormwater Drainage</span></li>
+          <li><span>🚰 Water Pipelines & Leaks</span></li>
+        </ul>
+      </div>
+
+      <div class="footer-contact-col">
+        <h4 class="footer-col-title">KMC Civic Hotline</h4>
+        <p class="hotline-number">📞 1800-425-KMC (Toll Free)</p>
+        <p class="hotline-hours">Operating 24/7 for emergency civic grievances</p>
+        <div class="footer-city-badge">
+          📍 Kochi Municipal Corporation Area
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="footer-container bottom-flex">
+        <p>© 2026 CivicFix Citizen Platform. Built for transparent civic governance.</p>
+        <div class="bottom-links">
+          <span>Public Grievance Redressal Mechanism</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ========================================================================= -->
+  <!-- TOAST NOTIFICATION                                                        -->
+  <!-- ========================================================================= -->
+  <div class="toast-notification" id="toastNotification" role="alert" aria-live="polite">
+    <span class="toast-icon">✓</span>
+    <span class="toast-message" id="toastMessage">Report submitted successfully!</span>
+  </div>
+
+  <!-- Leaflet JS for Map -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  
+  <!-- Main Application Script -->
+  <script src="app.js"></script>
+</body>
+</html>
