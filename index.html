@@ -54,6 +54,7 @@
           My Reports
           <span class="nav-badge" id="myReportsBadge">3</span>
         </a>
+        <a href="#admin" class="nav-item" data-nav="admin">Admin</a>
         <a href="#track" class="nav-item" data-nav="track">Track Report</a>
         <a href="#nearby" class="nav-item" data-nav="nearby">Nearby Problems</a>
         <a href="#about" class="nav-item" data-nav="about">About</a>
@@ -79,6 +80,7 @@
         <a href="#home" class="mobile-nav-item active" data-nav="home">🏠 Home</a>
         <a href="#report" class="mobile-nav-item" data-nav="report">➕ Report Problem</a>
         <a href="#my-reports" class="mobile-nav-item" data-nav="my-reports">📁 My Reports (<span id="mobileReportsCount">3</span>)</a>
+        <a href="#admin" class="mobile-nav-item" data-nav="admin">🛠️ Admin</a>
         <a href="#track" class="mobile-nav-item" data-nav="track">🔍 Track Report</a>
         <a href="#nearby" class="mobile-nav-item" data-nav="nearby">🗺️ Nearby Problems</a>
         <a href="#about" class="mobile-nav-item" data-nav="about">ℹ️ About</a>
@@ -140,26 +142,26 @@
           <div class="hero-visual">
             <div class="hero-card-preview">
               <div class="preview-card-header">
-                <div class="preview-badge-status status-progress">
+                <div class="preview-badge-status status-progress" id="heroPreviewStatus">
                   <span class="status-pulse-dot"></span> In Progress
                 </div>
-                <span class="preview-ticket-id">CF10245</span>
+                <span class="preview-ticket-id" id="heroPreviewId">CF10245</span>
               </div>
               <div class="preview-card-image-wrap">
                 <img src="assets/images/pothole.jpg" alt="Pothole near Main Junction" class="preview-card-img" id="heroPreviewImg">
-                <span class="preview-cat-tag">🕳️ Pothole</span>
+                <span class="preview-cat-tag" id="heroPreviewCategory">🕳️ Pothole</span>
               </div>
               <div class="preview-card-info">
-                <h3>Pothole near Main Junction</h3>
-                <p class="preview-loc">📍 Main Junction, Kochi</p>
-                <div class="preview-mini-progress">
+                <h3 id="heroPreviewTitle">Pothole near Main Junction</h3>
+                <p class="preview-loc" id="heroPreviewLocation">📍 Main Junction, Kochi</p>
+                <div class="preview-mini-progress" id="heroPreviewProgress">
                   <div class="mini-bar filled"></div>
                   <div class="mini-bar filled"></div>
                   <div class="mini-bar active"></div>
                   <div class="mini-bar"></div>
                 </div>
                 <div class="preview-card-footer">
-                  <span class="preview-update-time">Updated 10:30 AM</span>
+                  <span class="preview-update-time" id="heroPreviewUpdated">Updated 10:30 AM</span>
                   <a href="#track?id=CF10245" class="preview-track-link">Track Live →</a>
                 </div>
               </div>
@@ -288,72 +290,7 @@
             <a href="#my-reports" class="btn btn-outline">View All Reports →</a>
           </div>
 
-          <div class="reports-card-grid" id="homeRecentReportsGrid">
-            
-            <!-- Report 1: Pothole near Main Junction -->
-            <div class="report-card">
-              <div class="report-card-media">
-                <img src="assets/images/pothole.jpg" alt="Pothole near Main Junction" class="report-card-img">
-                <span class="report-badge-id">CF10245</span>
-              </div>
-              <div class="report-card-body">
-                <div class="report-status-row">
-                  <span class="status-chip status-progress">
-                    <span class="status-pulse-dot"></span> In Progress
-                  </span>
-                  <span class="report-category-pill">🕳️ Pothole</span>
-                </div>
-                <h3 class="report-card-heading">Pothole near Main Junction</h3>
-                <p class="report-card-location">📍 Main Junction, Kochi</p>
-                <div class="report-card-actions">
-                  <a href="#track?id=CF10245" class="btn btn-sm btn-primary">Track Report</a>
-                </div>
-              </div>
-            </div>
-
-            <!-- Report 2: Broken Streetlight -->
-            <div class="report-card">
-              <div class="report-card-media">
-                <img src="assets/images/streetlight.jpg" alt="Broken Streetlight" class="report-card-img">
-                <span class="report-badge-id">CF10231</span>
-              </div>
-              <div class="report-card-body">
-                <div class="report-status-row">
-                  <span class="status-chip status-review">
-                    <span class="status-pulse-dot"></span> Under Review
-                  </span>
-                  <span class="report-category-pill">💡 Streetlight</span>
-                </div>
-                <h3 class="report-card-heading">Broken Streetlight</h3>
-                <p class="report-card-location">📍 MG Road, Kochi</p>
-                <div class="report-card-actions">
-                  <a href="#track?id=CF10231" class="btn btn-sm btn-primary">Track Report</a>
-                </div>
-              </div>
-            </div>
-
-            <!-- Report 3: Garbage Overflow -->
-            <div class="report-card">
-              <div class="report-card-media">
-                <img src="assets/images/garbage.jpg" alt="Garbage Overflow" class="report-card-img">
-                <span class="report-badge-id">CF10198</span>
-              </div>
-              <div class="report-card-body">
-                <div class="report-status-row">
-                  <span class="status-chip status-resolved">
-                    <span class="status-pulse-dot"></span> Resolved
-                  </span>
-                  <span class="report-category-pill">🗑️ Garbage</span>
-                </div>
-                <h3 class="report-card-heading">Garbage Overflow</h3>
-                <p class="report-card-location">📍 Bus Stand Road, Kochi</p>
-                <div class="report-card-actions">
-                  <a href="#track?id=CF10198" class="btn btn-sm btn-primary">Track Report</a>
-                </div>
-              </div>
-            </div>
-
-          </div>
+          <div class="reports-card-grid" id="homeRecentReportsGrid"></div>
         </div>
       </section>
 
@@ -506,8 +443,17 @@
               <label class="form-section-label">
                 <span class="label-step">3</span> Location
               </label>
-              <span class="label-hint">Pinned for municipal field inspectors</span>
+              <span class="label-hint">Search for a place or click the map to set the report location</span>
             </div>
+
+            <div class="location-search-wrap">
+              <label class="sr-only" for="locationSearchInput">Search for a place</label>
+              <input type="search" id="locationSearchInput" class="location-search-input" placeholder="Search a street, landmark, or area..." autocomplete="off">
+              <button type="button" class="btn btn-primary" id="btnSearchLocation">Search</button>
+            </div>
+            <div class="location-search-results" id="locationSearchResults" aria-live="polite"></div>
+            <div id="reportLocationMap" class="report-location-map" aria-label="Choose report location on map"></div>
+            <p class="map-attribution-note">Place search by Nominatim · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a></p>
 
             <div class="location-detected-card">
               <div class="loc-status-indicator">
@@ -690,7 +636,68 @@
     </section>
 
     <!-- ======================================================================= -->
-    <!-- 5. TRACK REPORT PAGE                                                    -->
+    <!-- 5. ADMIN LOGIN                                                          -->
+    <!-- ======================================================================= -->
+    <section class="page-view" id="page-admin-login" data-page="admin-login">
+      <div class="admin-login-container">
+        <a href="#home" class="back-link">← Back to CivicFix</a>
+        <div class="admin-login-card">
+          <span class="section-eyebrow">CivicFix Operations</span>
+          <h1 class="page-main-heading">Admin Sign In</h1>
+          <p class="page-subtitle">Sign in to manage civic report updates.</p>
+          <form id="adminLoginForm" class="admin-login-form">
+            <div class="admin-login-field">
+              <label for="adminUsername">Username</label>
+              <input id="adminUsername" name="username" type="text" autocomplete="username" required>
+            </div>
+            <div class="admin-login-field">
+              <label for="adminPassword">Password</label>
+              <input id="adminPassword" name="password" type="password" autocomplete="current-password" required>
+            </div>
+            <p class="admin-login-error" id="adminLoginError" role="alert" aria-live="polite"></p>
+            <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================= -->
+    <!-- 6. ADMIN REPORT QUEUE                                                   -->
+    <!-- ======================================================================= -->
+    <section class="page-view" id="page-admin" data-page="admin">
+      <div class="page-container admin-page-container">
+        <div class="page-title-bar">
+          <div>
+            <span class="section-eyebrow">CivicFix Operations</span>
+            <h1 class="page-main-heading">Report Queue</h1>
+            <p class="page-subtitle">Review submitted issues and publish progress updates for citizens.</p>
+          </div>
+          <div class="admin-page-actions">
+            <span class="admin-queue-total" id="adminQueueTotal">0 reports</span>
+            <button type="button" class="btn btn-outline admin-logout-button" id="btnAdminLogout">Sign Out</button>
+          </div>
+        </div>
+
+        <div class="admin-queue-toolbar">
+          <label class="reports-search-box admin-search-box">
+            <span class="sr-only">Search reports</span>
+            <input type="search" id="adminSearchInput" placeholder="Search reports by ID, issue, or location...">
+          </label>
+          <label class="admin-filter-label" for="adminStatusFilter">Status</label>
+          <select class="admin-select admin-filter-select" id="adminStatusFilter">
+            <option value="All">All statuses</option>
+            <option value="Under Review">Under Review</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Resolved">Resolved</option>
+          </select>
+        </div>
+
+        <div class="admin-report-list" id="adminReportsList" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <!-- ======================================================================= -->
+    <!-- 6. TRACK REPORT PAGE                                                    -->
     <!-- ======================================================================= -->
     <section class="page-view" id="page-track" data-page="track">
       <div class="track-page-container">
@@ -878,6 +885,13 @@
             <span class="legend-item"><span class="legend-dot dot-resolved"></span> Resolved</span>
           </div>
         </div>
+
+        <div class="nearby-place-search">
+          <label class="sr-only" for="nearbyPlaceSearchInput">Search map location</label>
+          <input type="search" id="nearbyPlaceSearchInput" class="location-search-input" placeholder="Search for a place to view nearby..." autocomplete="off">
+          <button type="button" class="btn btn-primary" id="btnSearchNearbyPlace">Find on Map</button>
+        </div>
+        <div class="location-search-results nearby-search-results" id="nearbyPlaceSearchResults" aria-live="polite"></div>
 
         <!-- Filter Tags Bar -->
         <div class="nearby-filters-row">

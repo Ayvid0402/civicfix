@@ -102,6 +102,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================================================================
   const STORAGE_KEY = 'civicfix_reports_v2';
   const STATS_KEY = 'civicfix_stats_v2';
+  const REPORT_STATUSES = ['Under Review', 'In Progress', 'Resolved'];
+  const ADMIN_USERNAME = 'admin';
+  const ADMIN_PASSWORD = 'civicfix123';
+  const ADMIN_SESSION_KEY = 'civicfix_admin_authenticated';
 
   let state = {
     reports: loadReports(),
@@ -114,7 +118,13 @@ document.addEventListener('DOMContentLoaded', () => {
     leafletMap: null,
     mapMarkers: [],
     activeMapMarkerId: 'CF10245',
-    currentLocation: 'Main Junction, Kochi'
+    currentLocation: 'Main Junction, Kochi',
+    currentCoords: { lat: 9.9816, lng: 76.2999 },
+    locationMap: null,
+    locationMarker: null,
+    nearbySearchMarker: null,
+    activeLocationSearch: null,
+    locationSearchLastRequestAt: 0
   };
 
   function loadReports() {
@@ -156,6 +166,48 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (e) {}
   }
 
+  function escapeHTML(value = '') {
+    return String(value).replace(/[&<>"']/g, character => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    })[character]);
+  }
+
+  function getStatusClass(status) {
+    if (status === 'Under Review') return 'status-review';
+    if (status === 'Resolved') return 'status-resolved';
+    return 'status-progress';
+  }
+
+  function formatDateTime(date = new Date()) {
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    });
+  }
+
+  function createReportId() {
+    const highestNumber = state.reports.reduce((highest, report) => {
+      const match = /^CF(\d+)$/i.exec(report.id);
+      return Math.max(highest, match ? Number(match[1]) : 0);
+    }, 0);
+    return `CF${String(highestNumber + 1).padStart(5, '0')}`;
+  }
+
+  function isAdminAuthenticated() {
+    try {
+      return sessionStorage.getItem(ADMIN_SESSION_KEY) === 'true';
+    } catch (error) {
+      return false;
+    }
+  }
+
   // =========================================================================
   // DOM REFERENCES
   // =========================================================================
@@ -188,6 +240,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const categoryCards = document.querySelectorAll('.category-select-card');
   const selectedCategoryInput = document.getElementById('selectedCategoryInput');
   const detectedLocationText = document.getElementById('detectedLocationText');
+  const locationSearchInput = document.getElementById('locationSearchInput');
+  const btnSearchLocation = document.getElementById('btnSearchLocation');
+  const locationSearchResults = document.getElementById('locationSearchResults');
+  const reportLocationMap = document.getElementById('reportLocationMap');
   const btnUseCurrentLocation = document.getElementById('btnUseCurrentLocation');
   const locBtnText = document.getElementById('locBtnText');
   const problemDescriptionInput = document.getElementById('problemDescriptionInput');
@@ -213,6 +269,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const countReview = document.getElementById('countReview');
   const countProgress = document.getElementById('countProgress');
   const countResolved = document.getElementById('countResolved');
+  const homeRecentReportsGrid = document.getElementById('homeRecentReportsGrid');
+  const adminReportsList = document.getElementById('adminReportsList');
+  const adminQueueTotal = document.getElementById('adminQueueTotal');
+  const adminSearchInput = document.getElementById('adminSearchInput');
+  const adminStatusFilter = document.getElementById('adminStatusFilter');
+  const adminLoginForm = document.getElementById('adminLoginForm');
+  const adminUsernameInput = document.getElementById('adminUsername');
+  const adminPasswordInput = document.getElementById('adminPassword');
+  const adminLoginError = document.getElementById('adminLoginError');
+  const btnAdminLogout = document.getElementById('btnAdminLogout');
 
   // Track Report DOM
   const trackHeaderId = document.getElementById('trackHeaderId');
@@ -233,6 +299,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Nearby Map DOM
   const mapChips = document.querySelectorAll('.map-chip');
+  const nearbyPlaceSearchInput = document.getElementById('nearbyPlaceSearchInput');
+  const btnSearchNearbyPlace = document.getElementById('btnSearchNearbyPlace');
+  const nearbyPlaceSearchResults = document.getElementById('nearbyPlaceSearchResults');
   const mapDetailCard = document.getElementById('mapDetailCard');
   const mapCardId = document.getElementById('mapCardId');
   const mapCardIcon = document.getElementById('mapCardIcon');
@@ -284,9 +353,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const reportIdParam = queryParams.get('id');
 
     // Default fallback to home
-    const validPages = ['home', 'report', 'success', 'my-reports', 'track', 'nearby', 'about'];
+    const validPages = ['home', 'report', 'success', 'my-reports', 'admin-login', 'admin', 'track', 'nearby', 'about'];
     if (!validPages.includes(pageName)) {
       pageName = 'home';
+    }
+
+    if (pageName === 'admin' && !isAdminAuthenticated()) {
+      window.location.hash = '#admin-login';
+      pageName = 'admin-login';
+    } else if (pageName === 'admin-login' && isAdminAuthenticated()) {
+      window.location.hash = '#admin';
+      pageName = 'admin';
     }
 
     // Switch active page
@@ -300,7 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Update Nav Link highlighting
     desktopNavItems.forEach(item => {
-      if (item.getAttribute('data-nav') === pageName) {
+      if (item.getAttribute('data-nav') === pageName || (pageName === 'admin-login' && item.getAttribute('data-nav') === 'admin')) {
         item.classList.add('active');
       } else {
         item.classList.remove('active');
@@ -308,7 +385,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     mobileNavItems.forEach(item => {
-      if (item.getAttribute('data-nav') === pageName) {
+      if (item.getAttribute('data-nav') === pageName || (pageName === 'admin-login' && item.getAttribute('data-nav') === 'admin')) {
         item.classList.add('active');
       } else {
         item.classList.remove('active');
@@ -327,6 +404,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Page-specific initializers
     if (pageName === 'my-reports') {
       renderMyReports();
+    } else if (pageName === 'admin') {
+      renderAdminReports();
+    } else if (pageName === 'report') {
+      initLocationPicker();
     } else if (pageName === 'track') {
       const idToTrack = reportIdParam || state.activeReportId || 'CF10245';
       renderTrackPage(idToTrack);
@@ -334,10 +415,61 @@ document.addEventListener('DOMContentLoaded', () => {
       initOrUpdateMap();
     } else if (pageName === 'home') {
       updateHomeStats();
+      renderRecentReports();
     }
   }
 
   window.addEventListener('hashchange', handleRoute);
+
+  if (adminLoginForm) {
+    adminLoginForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const username = adminUsernameInput.value.trim();
+      const password = adminPasswordInput.value;
+      if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
+        adminLoginError.textContent = 'Incorrect username or password.';
+        adminPasswordInput.value = '';
+        adminPasswordInput.focus();
+        return;
+      }
+
+      try {
+        sessionStorage.setItem(ADMIN_SESSION_KEY, 'true');
+      } catch (error) {
+        adminLoginError.textContent = 'Sign in is unavailable because session storage could not be accessed.';
+        return;
+      }
+
+      adminLoginError.textContent = '';
+      adminLoginForm.reset();
+      navigateTo('admin');
+      showToast('Signed in to the admin queue');
+    });
+  }
+
+  if (btnAdminLogout) {
+    btnAdminLogout.addEventListener('click', () => {
+      try {
+        sessionStorage.removeItem(ADMIN_SESSION_KEY);
+      } catch (error) {}
+      navigateTo('admin-login');
+      showToast('Signed out of the admin queue', 'ℹ️');
+    });
+  }
+
+  window.addEventListener('storage', (event) => {
+    if (event.key !== STORAGE_KEY || !event.newValue) return;
+    try {
+      const reports = JSON.parse(event.newValue);
+      if (Array.isArray(reports)) {
+        state.reports = reports;
+        updateHomeStats();
+        handleRoute();
+      }
+    } catch (error) {
+      console.warn('Could not sync reports from another tab:', error);
+    }
+  });
 
   // Mobile menu toggle
   if (btnMobileToggle) {
@@ -358,6 +490,66 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (myReportsBadge) myReportsBadge.textContent = state.reports.length;
     if (mobileReportsCount) mobileReportsCount.textContent = state.reports.length;
+  }
+
+  function renderRecentReports() {
+    if (!homeRecentReportsGrid) return;
+    const recentReports = state.reports.slice(0, 3);
+    const latestReport = recentReports[0];
+    if (latestReport) {
+      const heroStatus = document.getElementById('heroPreviewStatus');
+      const heroId = document.getElementById('heroPreviewId');
+      const heroCategory = document.getElementById('heroPreviewCategory');
+      const heroTitle = document.getElementById('heroPreviewTitle');
+      const heroLocation = document.getElementById('heroPreviewLocation');
+      const heroUpdated = document.getElementById('heroPreviewUpdated');
+      const heroProgress = document.getElementById('heroPreviewProgress');
+      const heroTrackLink = document.querySelector('.preview-track-link');
+      const statusIndex = ['Submitted', ...REPORT_STATUSES].indexOf(latestReport.status);
+
+      if (heroStatus) {
+        heroStatus.className = `preview-badge-status ${getStatusClass(latestReport.status)}`;
+        heroStatus.innerHTML = `<span class="status-pulse-dot"></span> ${escapeHTML(latestReport.status)}`;
+      }
+      if (heroId) heroId.textContent = latestReport.id;
+      if (heroCategory) heroCategory.textContent = `${latestReport.icon} ${latestReport.category}`;
+      if (heroTitle) heroTitle.textContent = latestReport.title;
+      if (heroLocation) heroLocation.textContent = `📍 ${latestReport.location}`;
+      if (heroUpdated) heroUpdated.textContent = `Updated ${latestReport.lastUpdated || latestReport.time || 'recently'}`;
+      if (heroTrackLink) heroTrackLink.href = `#track?id=${encodeURIComponent(latestReport.id)}`;
+      const heroImage = document.getElementById('heroPreviewImg');
+      if (heroImage) {
+        heroImage.src = latestReport.image || 'assets/images/pothole.jpg';
+        heroImage.alt = latestReport.title;
+      }
+      if (heroProgress) {
+        heroProgress.querySelectorAll('.mini-bar').forEach((bar, index) => {
+          bar.className = index < statusIndex ? 'mini-bar filled' : index === statusIndex ? 'mini-bar active' : 'mini-bar';
+        });
+      }
+    }
+
+    homeRecentReportsGrid.innerHTML = recentReports.map(report => `
+      <div class="report-card">
+        <div class="report-card-media">
+          <img src="${escapeHTML(report.image || 'assets/images/pothole.jpg')}" alt="${escapeHTML(report.title)}" class="report-card-img">
+          <span class="report-badge-id">${escapeHTML(report.id)}</span>
+        </div>
+        <div class="report-card-body">
+          <div class="report-status-row">
+            <span class="status-chip ${getStatusClass(report.status)}">
+              <span class="status-pulse-dot"></span> ${escapeHTML(report.status)}
+            </span>
+            <span class="report-category-pill">${escapeHTML(report.icon)} ${escapeHTML(report.category)}</span>
+          </div>
+          <h3 class="report-card-heading">${escapeHTML(report.title)}</h3>
+          <p class="report-card-location">📍 ${escapeHTML(report.location)}</p>
+          <div class="report-card-actions">
+            <a href="#track?id=${encodeURIComponent(report.id)}" class="btn btn-sm btn-primary">Track Report</a>
+          </div>
+        </div>
+      </div>
+    `).join('');
   }
 
   // =========================================================================
@@ -493,21 +685,195 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // =========================================================================
-  // REPORT FORM: LOCATION DETECTION
+  // REPORT FORM: LOCATION SEARCH & PICKER
   // =========================================================================
-  btnUseCurrentLocation.addEventListener('click', () => {
-    locBtnText.textContent = 'Scanning GPS...';
-    btnUseCurrentLocation.classList.add('scanning');
+  function setReportLocation(label, lat, lng) {
+    const latitude = Number(lat);
+    const longitude = Number(lng);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
 
-    setTimeout(() => {
-      locBtnText.textContent = 'Location Locked ✓';
-      btnUseCurrentLocation.classList.remove('scanning');
-      detectedLocationText.textContent = 'Main Junction, Kochi';
-      showToast('📍 High-accuracy Kochi GPS location locked (±3m)');
-      setTimeout(() => {
-        locBtnText.textContent = 'Use Current Location';
-      }, 2500);
-    }, 600);
+    state.currentLocation = label;
+    state.currentCoords = { lat: latitude, lng: longitude };
+    detectedLocationText.textContent = label;
+    const coordsText = document.getElementById('detectedCoordsSub');
+    if (coordsText) coordsText.textContent = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+
+    if (state.locationMap) {
+      if (state.locationMarker) {
+        state.locationMarker.setLatLng([latitude, longitude]);
+      } else {
+        state.locationMarker = L.marker([latitude, longitude]).addTo(state.locationMap);
+      }
+      state.locationMap.setView([latitude, longitude], 16, { animate: true });
+    }
+  }
+
+  function initLocationPicker() {
+    if (!reportLocationMap || state.locationMap || typeof L === 'undefined') return;
+
+    state.locationMap = L.map(reportLocationMap, {
+      center: [state.currentCoords.lat, state.currentCoords.lng],
+      zoom: 15,
+      scrollWheelZoom: false
+    });
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
+      maxZoom: 19
+    }).addTo(state.locationMap);
+    state.locationMarker = L.marker([state.currentCoords.lat, state.currentCoords.lng]).addTo(state.locationMap);
+    state.locationMap.on('click', event => {
+      const { lat, lng } = event.latlng;
+      setReportLocation(`Map location (${lat.toFixed(5)}, ${lng.toFixed(5)})`, lat, lng);
+    });
+    setTimeout(() => state.locationMap.invalidateSize(), 150);
+  }
+
+  async function searchOpenStreetMapPlaces(query) {
+    if (state.activeLocationSearch) state.activeLocationSearch.abort();
+    state.activeLocationSearch = new AbortController();
+    const controller = state.activeLocationSearch;
+    const waitMs = Math.max(0, 1100 - (Date.now() - state.locationSearchLastRequestAt));
+    if (waitMs) await new Promise(resolve => setTimeout(resolve, waitMs));
+    if (controller.signal.aborted) throw new DOMException('Search cancelled', 'AbortError');
+
+    const params = new URLSearchParams({
+      q: query,
+      format: 'jsonv2',
+      addressdetails: '1',
+      limit: '5',
+      countrycodes: 'in'
+    });
+    state.locationSearchLastRequestAt = Date.now();
+    const response = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
+      headers: { Accept: 'application/json' },
+      signal: controller.signal
+    });
+    if (!response.ok) throw new Error('Place search is temporarily unavailable.');
+    return response.json();
+  }
+
+  async function searchReportLocations() {
+    const query = locationSearchInput.value.trim();
+    if (query.length < 3) {
+      locationSearchResults.textContent = 'Enter at least 3 characters to search.';
+      return;
+    }
+
+    locationSearchResults.textContent = 'Searching OpenStreetMap...';
+    btnSearchLocation.disabled = true;
+
+    try {
+      const results = await searchOpenStreetMapPlaces(query);
+      locationSearchResults.replaceChildren();
+
+      if (!results.length) {
+        locationSearchResults.textContent = 'No matching places found. Try a nearby landmark or street.';
+        return;
+      }
+
+      results.forEach(result => {
+        const option = document.createElement('button');
+        option.type = 'button';
+        option.className = 'location-result-option';
+        option.textContent = result.display_name;
+        option.addEventListener('click', () => {
+          setReportLocation(result.display_name, result.lat, result.lon);
+          locationSearchResults.replaceChildren();
+          locationSearchInput.value = result.display_name;
+        });
+        locationSearchResults.append(option);
+      });
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        locationSearchResults.textContent = error.message || 'Could not search places. Check your connection and try again.';
+      }
+    } finally {
+      btnSearchLocation.disabled = false;
+    }
+  }
+
+  async function searchNearbyPlaces() {
+    const query = nearbyPlaceSearchInput.value.trim();
+    if (query.length < 3) {
+      nearbyPlaceSearchResults.textContent = 'Enter at least 3 characters to search.';
+      return;
+    }
+
+    nearbyPlaceSearchResults.textContent = 'Searching OpenStreetMap...';
+    btnSearchNearbyPlace.disabled = true;
+    try {
+      const results = await searchOpenStreetMapPlaces(query);
+      nearbyPlaceSearchResults.replaceChildren();
+      if (!results.length) {
+        nearbyPlaceSearchResults.textContent = 'No matching places found. Try a nearby landmark or street.';
+        return;
+      }
+
+      results.forEach(result => {
+        const option = document.createElement('button');
+        option.type = 'button';
+        option.className = 'location-result-option';
+        option.textContent = result.display_name;
+        option.addEventListener('click', () => {
+          const latitude = Number(result.lat);
+          const longitude = Number(result.lon);
+          if (state.nearbySearchMarker) {
+            state.nearbySearchMarker.setLatLng([latitude, longitude]);
+          } else {
+            state.nearbySearchMarker = L.marker([latitude, longitude], { title: result.display_name })
+              .addTo(state.leafletMap);
+          }
+          state.nearbySearchMarker.bindPopup(escapeHTML(result.display_name)).openPopup();
+          state.leafletMap.setView([latitude, longitude], 15, { animate: true });
+          nearbyPlaceSearchInput.value = result.display_name;
+          nearbyPlaceSearchResults.replaceChildren();
+        });
+        nearbyPlaceSearchResults.append(option);
+      });
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        nearbyPlaceSearchResults.textContent = error.message || 'Could not search places. Check your connection and try again.';
+      }
+    } finally {
+      btnSearchNearbyPlace.disabled = false;
+    }
+  }
+
+  btnSearchLocation.addEventListener('click', searchReportLocations);
+  locationSearchInput.addEventListener('keydown', event => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      searchReportLocations();
+    }
+  });
+
+  btnSearchNearbyPlace.addEventListener('click', searchNearbyPlaces);
+  nearbyPlaceSearchInput.addEventListener('keydown', event => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      searchNearbyPlaces();
+    }
+  });
+
+  btnUseCurrentLocation.addEventListener('click', () => {
+    if (!navigator.geolocation) {
+      showToast('Location services are not supported by this browser', '⚠️');
+      return;
+    }
+
+    locBtnText.textContent = 'Finding location...';
+    btnUseCurrentLocation.disabled = true;
+    navigator.geolocation.getCurrentPosition(position => {
+      const { latitude, longitude } = position.coords;
+      setReportLocation(`Current location (${latitude.toFixed(5)}, ${longitude.toFixed(5)})`, latitude, longitude);
+      locBtnText.textContent = 'Use Current Location';
+      btnUseCurrentLocation.disabled = false;
+      showToast('Current location selected');
+    }, () => {
+      locBtnText.textContent = 'Use Current Location';
+      btnUseCurrentLocation.disabled = false;
+      showToast('Could not access your location. Search for a place instead.', '⚠️');
+    }, { enableHighAccuracy: true, timeout: 10000 });
   });
 
   // =========================================================================
@@ -545,9 +911,8 @@ document.addEventListener('DOMContentLoaded', () => {
       submitBtnText.style.display = 'inline-block';
       submitSpinner.style.display = 'none';
 
-      // Generate or reuse CF10245 for demo flow
-      // To strictly adhere to the prompt ("Show: CF10245"):
-      const newId = 'CF10245';
+      const newId = createReportId();
+      const submittedAt = formatDateTime();
       const category = state.selectedCategory || 'Pothole';
       const catIcons = {
         'Pothole': '🕳️',
@@ -562,33 +927,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const newReport = {
         id: newId,
-        title: `${category} near Main Junction`,
+        title: `${category} near ${state.currentLocation.split(',').slice(0, 2).join(',')}`,
         category: category,
         icon: catIcons[category] || '📍',
-        location: 'Main Junction, Kochi',
-        status: 'In Progress',
-        time: 'Today, 10:30 AM',
+        location: state.currentLocation,
+        status: 'Under Review',
+        time: submittedAt,
+        statusHistory: [{ status: 'Under Review', updatedAt: submittedAt }],
         description: desc,
         image: state.uploadedPhotoData || 'assets/images/pothole.jpg',
         crew: 'Ramesh Nair • KMC Road Maintenance Wing (Order #KMC-419)',
-        lastUpdated: 'Today, 10:30 AM',
-        coords: { lat: 9.9816, lng: 76.2999 },
+        lastUpdated: submittedAt,
+        coords: { ...state.currentCoords },
         ward: 'Ward 12'
       };
 
-      // If CF10245 already exists, replace it at the beginning, else prepend
-      const existingIdx = state.reports.findIndex(r => r.id === newId);
-      if (existingIdx !== -1) {
-        state.reports[existingIdx] = newReport;
-      } else {
-        state.reports.unshift(newReport);
-      }
+      state.reports.unshift(newReport);
 
       saveReports();
 
       // Increment stats
       state.stats.submitted += 1;
-      state.stats.inProgress += 1;
+      state.stats.underReview += 1;
       saveStats();
       updateHomeStats();
 
@@ -597,7 +957,9 @@ document.addEventListener('DOMContentLoaded', () => {
       // Populate Success Screen
       successReportId.textContent = newId;
       successCategory.textContent = category;
-      successLocation.textContent = 'Main Junction, Kochi';
+      successLocation.textContent = state.currentLocation;
+      successStatusBadge.className = `status-chip ${getStatusClass(newReport.status)}`;
+      successStatusBadge.innerHTML = `<span class="status-pulse-dot"></span> ${newReport.status}`;
 
       // Route to Success Screen
       navigateTo('success');
@@ -674,20 +1036,20 @@ document.addEventListener('DOMContentLoaded', () => {
       return `
         <div class="report-card">
           <div class="report-card-media">
-            <img src="${r.image}" alt="${r.title}" class="report-card-img" onerror="this.src='assets/images/pothole.jpg'">
-            <span class="report-badge-id">${r.id}</span>
+            <img src="${escapeHTML(r.image || 'assets/images/pothole.jpg')}" alt="${escapeHTML(r.title)}" class="report-card-img" onerror="this.src='assets/images/pothole.jpg'">
+            <span class="report-badge-id">${escapeHTML(r.id)}</span>
           </div>
           <div class="report-card-body">
             <div class="report-status-row">
-              <span class="status-chip ${statusClass}">
-                <span class="status-pulse-dot"></span> ${r.status}
+                <span class="status-chip ${statusClass}">
+                <span class="status-pulse-dot"></span> ${escapeHTML(r.status)}
               </span>
-              <span class="report-category-pill">${r.icon} ${r.category}</span>
+              <span class="report-category-pill">${escapeHTML(r.icon)} ${escapeHTML(r.category)}</span>
             </div>
-            <h3 class="report-card-heading">${r.title}</h3>
-            <p class="report-card-location">📍 ${r.location}</p>
+            <h3 class="report-card-heading">${escapeHTML(r.title)}</h3>
+            <p class="report-card-location">📍 ${escapeHTML(r.location)}</p>
             <div class="report-card-actions">
-              <button type="button" class="btn btn-sm btn-primary btn-block" onclick="viewTicketTrack('${r.id}')">
+              <button type="button" class="btn btn-sm btn-primary btn-block" onclick="viewTicketTrack('${escapeHTML(r.id)}')">
                 Track Report
               </button>
             </div>
@@ -696,6 +1058,89 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
     }).join('');
   }
+
+  function renderAdminReports() {
+    if (!adminReportsList) return;
+    const query = adminSearchInput ? adminSearchInput.value.trim().toLowerCase() : '';
+    const statusFilter = adminStatusFilter ? adminStatusFilter.value : 'All';
+    const filteredReports = state.reports.filter(report => {
+      const matchesStatus = statusFilter === 'All' || report.status === statusFilter;
+      const searchableText = [report.id, report.title, report.location, report.category, report.description]
+        .join(' ')
+        .toLowerCase();
+      return matchesStatus && (!query || searchableText.includes(query));
+    });
+
+    if (adminQueueTotal) {
+      adminQueueTotal.textContent = `${state.reports.length} ${state.reports.length === 1 ? 'report' : 'reports'}`;
+    }
+
+    if (filteredReports.length === 0) {
+      adminReportsList.innerHTML = '<div class="admin-empty-state">No reports match this search or status.</div>';
+      return;
+    }
+
+    adminReportsList.innerHTML = filteredReports.map(report => `
+      <article class="admin-report-row">
+        <div class="admin-report-summary">
+          <img class="admin-report-image" src="${escapeHTML(report.image || 'assets/images/pothole.jpg')}" alt="">
+          <div class="admin-report-copy">
+            <div class="admin-report-meta">
+              <span class="admin-report-id">${escapeHTML(report.id)}</span>
+              <span class="report-category-pill">${escapeHTML(report.icon)} ${escapeHTML(report.category)}</span>
+            </div>
+            <h2 class="admin-report-title">${escapeHTML(report.title)}</h2>
+            <p class="admin-report-location">📍 ${escapeHTML(report.location)}${report.ward ? ` · ${escapeHTML(report.ward)}` : ''}</p>
+            <p class="admin-report-description">${escapeHTML(report.description || 'No description provided.')}</p>
+            <a class="admin-track-link" href="#track?id=${encodeURIComponent(report.id)}">View citizen tracking</a>
+          </div>
+        </div>
+        <div class="admin-report-controls">
+          <span class="status-chip ${getStatusClass(report.status)}">
+            <span class="status-pulse-dot"></span> ${escapeHTML(report.status)}
+          </span>
+          <label class="sr-only" for="admin-status-${escapeHTML(report.id)}">New status for ${escapeHTML(report.title)}</label>
+          <select class="admin-select admin-status-select" id="admin-status-${escapeHTML(report.id)}" data-report-id="${escapeHTML(report.id)}">
+            ${REPORT_STATUSES.map(status => `<option value="${status}"${report.status === status ? ' selected' : ''}>${status}</option>`).join('')}
+          </select>
+          <button type="button" class="btn btn-sm btn-primary admin-save-status" data-report-id="${escapeHTML(report.id)}">Update status</button>
+        </div>
+      </article>
+    `).join('');
+  }
+
+  function updateReportStatus(reportId, status) {
+    if (!REPORT_STATUSES.includes(status)) return;
+    const report = state.reports.find(item => item.id === reportId);
+    if (!report || report.status === status) {
+      showToast(report ? 'Report already has this status' : 'Report not found', 'ℹ️');
+      return;
+    }
+
+    const updatedAt = formatDateTime();
+    report.status = status;
+    report.lastUpdated = updatedAt;
+    if (!Array.isArray(report.statusHistory)) report.statusHistory = [];
+    report.statusHistory.push({ status, updatedAt });
+    saveReports();
+    renderAdminReports();
+    updateHomeStats();
+    showToast(`${report.id} updated to ${status}`);
+  }
+
+  if (adminReportsList) {
+    adminReportsList.addEventListener('click', (event) => {
+      const button = event.target.closest('.admin-save-status');
+      if (!button) return;
+      const reportId = button.getAttribute('data-report-id');
+      const select = Array.from(adminReportsList.querySelectorAll('.admin-status-select'))
+        .find(item => item.getAttribute('data-report-id') === reportId);
+      if (select) updateReportStatus(reportId, select.value);
+    });
+  }
+
+  if (adminSearchInput) adminSearchInput.addEventListener('input', renderAdminReports);
+  if (adminStatusFilter) adminStatusFilter.addEventListener('change', renderAdminReports);
 
   // Filter Buttons
   filterTabBtns.forEach(btn => {
@@ -747,9 +1192,7 @@ document.addEventListener('DOMContentLoaded', () => {
     trackLastUpdated.textContent = `Last updated: ${report.lastUpdated || 'Today, 10:30 AM'}`;
 
     // Header Status Badge
-    let statusClass = 'status-progress';
-    if (report.status === 'Under Review') statusClass = 'status-review';
-    else if (report.status === 'Resolved') statusClass = 'status-resolved';
+    const statusClass = getStatusClass(report.status);
     trackHeaderBadge.className = `status-chip status-chip-lg ${statusClass}`;
     trackHeaderBadge.innerHTML = `<span class="status-pulse-dot"></span> ${report.status}`;
 
@@ -763,10 +1206,10 @@ document.addEventListener('DOMContentLoaded', () => {
     trackDetailPhoto.src = report.image || 'assets/images/pothole.jpg';
 
     // Vertical Timeline Dynamic Update
-    renderVerticalTimeline(report.status);
+    renderVerticalTimeline(report.status, report);
   }
 
-  function renderVerticalTimeline(currentStatus) {
+  function renderVerticalTimeline(currentStatus, report) {
     const stepSubmitted = document.getElementById('stepSubmitted');
     const conn1 = document.getElementById('conn1');
     const stepUnderReview = document.getElementById('stepUnderReview');
@@ -776,6 +1219,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const stepResolved = document.getElementById('stepResolved');
 
     if (!stepSubmitted || !stepInProgress || !stepResolved) return;
+
+    stepSubmitted.querySelector('.step-note').textContent = `Civic issue logged into CivicFix digital portal. Assigned unique ticket #${report.id}.`;
+    stepUnderReview.querySelector('.step-note').textContent = 'Report details and location are under municipal review.';
+    stepInProgress.querySelector('.step-note').textContent = `Work assigned: ${report.crew || 'KMC Public Works'}.`;
+    stepResolved.querySelector('.step-note').textContent = 'Resolution has been recorded for this report.';
 
     // Reset classes
     [stepSubmitted, stepUnderReview, stepInProgress, stepResolved].forEach(step => {
@@ -835,6 +1283,30 @@ document.addEventListener('DOMContentLoaded', () => {
       stepResolved.querySelector('.step-marker').innerHTML = '<span class="step-icon">✓</span>';
       addCurrentBadge(stepResolved, 'Resolved');
     }
+
+    const stages = [
+      { status: 'Submitted', step: stepSubmitted },
+      { status: 'Under Review', step: stepUnderReview },
+      { status: 'In Progress', step: stepInProgress },
+      { status: 'Resolved', step: stepResolved }
+    ];
+    const currentStageIndex = Math.max(0, stages.findIndex(stage => stage.status === currentStatus));
+    const history = new Map((report.statusHistory || []).map(entry => [entry.status, entry.updatedAt]));
+    stages.forEach((stage, index) => {
+      const timestamp = stage.step.querySelector('.step-timestamp');
+      if (!timestamp) return;
+      if (index === 0) {
+        timestamp.textContent = report.time ? `Reported ${report.time}` : 'Report submitted';
+      } else if (index > currentStageIndex) {
+        timestamp.textContent = 'Awaiting update';
+      } else if (history.has(stage.status)) {
+        timestamp.textContent = `Updated ${history.get(stage.status)}`;
+      } else if (index === currentStageIndex) {
+        timestamp.textContent = `Last updated ${report.lastUpdated || 'recently'}`;
+      } else {
+        timestamp.textContent = 'Completed';
+      }
+    });
   }
 
   function addCurrentBadge(stepEl, text = 'Current Status') {
@@ -896,10 +1368,8 @@ document.addEventListener('DOMContentLoaded', () => {
         scrollWheelZoom: true
       });
 
-      // CartoDB Positron clean map tiles (Free, fast, no API key needed)
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: 'abcd',
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
         maxZoom: 19
       }).addTo(state.leafletMap);
     }
